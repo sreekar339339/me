@@ -46,7 +46,12 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
+			"@tailwindcss/oxide",
 			"esbuild"
 		]
+	},
+	"dependencies": {
+		"mdsvex-relative-images": "^2.0.0",
+		"zod": "^4.0.17"
 	}
 }

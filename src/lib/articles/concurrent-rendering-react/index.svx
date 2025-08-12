@@ -1,0 +1,93 @@
+---
+title: Concurrent rendering in React.
+published: 08-21-2022
+
+---
+## Whats the problem we are trying to solve with this?
+
+Let's say React wants to **render** an **update** on screen**.** It does that by the following **work.** 
+
+1. Runs the code inside components.
+2. Creates/Updates virtual DOM and then real DOM.
+
+**Work = JS code running on the main thread.**
+
+This **"work"** can't be interrupted, which means other work like responding to user events, new state updates etc. are blocked by this current render work. This is known as **"Blocking" rendering** or synchronous rendering.
+
+<aside>
+🧠 **React has this problem because JS has a problem. JS blocks the main thread, which blocks the browser from responding to user events and React from doing newer updates.**
+</aside>
+
+![image](./Screenshot_2021-09-03_at_12.08.22_PM.png)
+
+In "**Concurrent" rendering**, rendering an update to the screen is **non-blocking** to other work. This is because the current render work is **interruptible** and can be **resumed** later. 
+
+<aside>
+🚨 This render work is done **in memory**, and only when this in-memory work is done, React can choose to update the DOM. React can also choose to **abandon** this in-memory rendering at any time and choose **not to** update the DOM.
+
+</aside>
+
+<!-- ![Screenshot 2021-09-03 at 12.11.05 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0479ebf6-de28-468e-860c-0e111994234b/Screenshot_2021-09-03_at_12.11.05_PM.png) -->
+
+**This mechanism forms the core principle of concurrent rendering which unlocks new possibilities in React!**
+
+<aside>
+🧠 **Concurrent rendering = Rendering that is interruptible and resumable which makes it non-blocking to other work.**
+
+</aside>
+
+## What it enables?
+
+It enables React to work on **several state updates concurrently.** This makes React powerful enough to improve UX in a variety of situations.
+
+1. Removes the **janky/stutter UX** during **user interactions** like typing, clicking etc. adjusting to the **CPU speed** of devices. This feature is called **Time-Slicing.** It is applied for **CPU-bound updates.** 
+    
+    <aside>
+    🧠 Makes **user interactions** **responsive** and **feel instant** without stutter when a high frequency of updates ****or costly mounts are being rendered simultaneously on the screen.
+    
+    </aside>
+    
+    - **Concurrent React** does this by marking the **user interaction** **update** at a **higher priority** than the **update** of some compute intensive component that is simultaneously rendered on screen, which is **interrupted** and the user input update is rendered on screen instead.
+    - That interrupted update is then **resumed** later after the user input update is done rendering to the screen.
+    
+    **Example:-**
+    
+    <!-- ![concurrentrrender.gif](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/410e8ac4-0048-4969-adc5-bf72f043c223/concurrentrrender.gif) -->
+    
+    <!-- ![syncrender.gif](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/070538ff-24e8-4c9f-8701-10ba324441c5/syncrender.gif) -->
+    
+    - The charts are updated when text changes in the input box.
+    - **More text** = **More data in the charts = More nodes in charts = More compute intensive = More work**
+    - Clock is **green** = **No stutter / jank** is experienced by the user typing in concurrent / asynchronous rendering React mode.
+    - Clock is **not** **green** = **Stutter / jank** in sync rendering React mode.
+2. Allows you to control showing **loading states** for components only when actually needed adjusting to **network speed**. Which means **less spinners = less janky UI/UX**. This feature is called **"Suspense".** It is applied for **I/O bound updates.**
+    - **Concurrent React** can start rendering a component in-memory without committing the result to the screen/DOM.
+    - Concurrent React works similar to how **git** works. Analogous to how git can create a "feature branch" from the "master branch".
+        - Thing on **master** **branch** ~ A component **rendered** on screen already.
+        - Thing on **feature** **branch** ~ A new component **to be** **rendered** on screen.
+    - Let's say we want to render a new component in-place of the component already rendered on screen. This new component has **async dependencies** on resources like data/code from network.
+    - Concurrent React can start rendering this new component **in-memory** and **"suspend" or pause** it's rendering when it's async dependency is not yet resolved. After suspending React can move on to other work if any and choose to **come back** to it later.
+    - When the async dependency have resolved, React can **resume or un-suspend** rendering of this new component in-memory. Till then, the component that is currently on-screen is **fully interactive** so that the user doesn't have to see a **big jarring loading spinner** on screen.
+    - React can choose to **update the screen/DOM** when the in-memory rendering of the new component is done. Analogous to **merging** **the feature branch to the master branch when work on feature branch is done!**
+    - You still have all the control to show a loading state if you want to.
+    
+    <!-- ![fastneetworkavaoidspinnerr.gif](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/45df715c-da06-4d50-9e0c-61d1fa540d75/fastneetworkavaoidspinnerr.gif) -->
+    
+    <aside>
+    🧠 React can keep the current component fully interactive on screen a little longer and **skip** a premature jarring loading state for the new component while **preparing**/**pre-rendering** the new component in memory first and updates the DOM when this in-memory rendering is done.
+    
+    </aside>
+    
+3. Start **pre-rendering** off-screen components like tabs when the **browser is idle** so that it's immediately ****seen by the user **without loading states**. **UX win!** This can be done by giving hints to React that a component is off screen like specifying a "**hidden**" attribute/prop to the component's container HTML element.
+    
+    <!-- ![Screenshot 2021-09-03 at 1.47.13 PM.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b50c29c8-dd64-49c7-9ea4-8d86473773e4/Screenshot_2021-09-03_at_1.47.13_PM.png) -->
+    
+
+4. Automatically avoids **race-conditions** in all the **updates**. Only the **latest** update is rendered to the screen and the **stale** updates that are in-progress are **abandoned.**
+
+<aside>
+💡 **In conclusion**, the goal of Concurrent React is to let developers **create better UI/UX** **easily** by providing the primitives and APIs to do them deeply baked into React.
+
+</aside>
+
+**All the pictures, gifs are screengrabbed from React conf 2018, 2019 slides from React Core Team members Dan Abramov, Andrew Clark, Flarnie Marchan presentations**
